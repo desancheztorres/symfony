@@ -1,4 +1,4 @@
-version: '3.3'
+version: "3.3"
 
 networks:
   symfony:
@@ -44,7 +44,7 @@ services:
       - "33061:3306"
     environment:
       MYSQL_DATABASE: symfony
-      MYSQL_USER: cristian
+      MYSQL_USER: symfony
       MYSQL_PASSWORD: secret
       MYSQL_ROOT_PASSWORD: secret
     networks:
