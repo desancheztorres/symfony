@@ -1,7 +1,12 @@
 FROM nginx:stable-alpine
 
-RUN sed -i "s/user  nginx/user root/g" /etc/nginx/nginx.conf
+ENV NGINXUSER=laravel
+ENV NGINXGROUP=laravel
 
-ADD ./default.conf /etc/nginx/conf.d/
+RUN mkdir -p /var/www/html/public
 
-RUN mkdir -p /var/www/html
+ADD ./default.conf /etc/nginx/conf.d/default.conf
+
+RUN sed -i "s/user www-data/user ${NGINXUSER}/g" /etc/nginx/nginx.conf
+
+RUN adduser -g ${NGINXGROUP} -s /bin/sh -D ${NGINXUSER}

@@ -15,7 +15,7 @@ rebuild:
 	@docker-compose up -d --build
 
 exec:
-	docker-compose exec php sh
+	@docker-compose exec php sh
 
 .PHONY: build
 build: composer/install
