@@ -1,0 +1,94 @@
+version: "3.3"
+
+networks:
+  symfony:
+
+services:
+  app:
+    build:
+      context: ./.docker/nginx
+      args:
+        - UID=${UID}
+        - GID=${GID}
+    container_name: symfony_app
+    ports:
+      - "8098:80"
+    volumes:
+      - .:/var/www/html
+    labels:
+      - "traefik.http.routers.www.rule=Host(`symfony.local`)"
+      - "traefik.http.services.www.loadbalancer.server.port=80"
+      - "traefik.enable=true"
+    depends_on:
+      - php
+      - mysql
+      - traefik
+    networks:
+      - symfony
+
+  php:
+    build:
+      context: ./.docker/php
+      args:
+        - UID=${UID}
+        - GID=${GID}
+    container_name: symfony_php
+    volumes:
+      - .:/var/www/html
+    environment:
+      XDEBUG_CLIENT_HOST: host.docker.internal
+      XDEBUG_CLIENT_PORT: 9000
+      PHP_IDE_CONFIG: serverName=symfony.local
+    networks:
+      - symfony
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mariadb:10.6
+    container_name: symfony_db
+    restart: unless-stopped
+    tty: true
+    volumes:
+      - symfony_db:/var/lib/mysql
+    ports:
+      - "33068:3306"
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    networks:
+      - symfony
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    depends_on:
+      - mysql
+    networks:
+      - symfony
+    links:
+      - mysql:db
+    volumes:
+      - /sessions
+    labels:
+      - "traefik.http.routers.phpmyadmin.rule=(Host(`phpmyadmin.symfony.local`))"
+      - "traefik.enable=true"
+
+  traefik:
+    image: traefik:v2.1
+    command:
+      - --api.insecure=true
+      - --providers.docker
+      - --providers.docker.exposedByDefault=false
+      - --providers.docker.network=internal
+    ports:
+      - 80:80
+      - ${TRAEFIK_PORT_DASHBOARD}:8080
+    networks:
+      - symfony
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  symfony_db:
